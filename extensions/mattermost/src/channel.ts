@@ -301,7 +301,7 @@ export const mattermostPlugin: ChannelPlugin<ResolvedMattermostAccount> = create
       isConfigured: isMattermostConfigured,
       describeAccount: describeMattermostAccount,
     },
-    auth: mattermostApprovalAuth,
+    approvalCapability: mattermostApprovalAuth,
     doctor: mattermostDoctor,
     groups: {
       resolveRequireMention: resolveMattermostGroupRequireMention,
