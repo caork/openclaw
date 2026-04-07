@@ -58,10 +58,9 @@ It intentionally exposes capability families, not raw gateway RPC names and not 
     fetch
     providers
 
-  memory
-    embedding
-      create
-      providers
+  embedding
+    create
+    providers
 ```
 
 ## Transport
