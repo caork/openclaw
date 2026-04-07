@@ -13,6 +13,7 @@ import { CANVAS_WS_PATH, handleA2uiHttpRequest } from "../canvas-host/a2ui.js";
 import type { CanvasHostHandler } from "../canvas-host/server.js";
 import { listBundledChannelPlugins } from "../channels/plugins/bundled.js";
 import { loadConfig } from "../config/config.js";
+import { isTruthyEnvValue } from "../infra/env.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveHookExternalContentSource as resolveHookExternalContentSourceFromSession } from "../security/external-content.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
@@ -137,6 +138,14 @@ const GATEWAY_PROBE_STATUS_BY_PATH = new Map<string, "live" | "ready">([
 function resolvePluginGatewayAuthBypassPaths(
   configSnapshot: ReturnType<typeof loadConfig>,
 ): Set<string> {
+  // Skip loading channel plugins when channels are disabled (e.g. offline deployment)
+  // to avoid requiring uninstalled channel-specific deps like @buape/carbon.
+  if (
+    isTruthyEnvValue(process.env.OPENCLAW_SKIP_CHANNELS) ||
+    isTruthyEnvValue(process.env.OPENCLAW_SKIP_PROVIDERS)
+  ) {
+    return new Set<string>();
+  }
   const paths = new Set<string>();
   for (const plugin of listBundledChannelPlugins()) {
     for (const path of plugin.gateway?.resolveGatewayAuthBypassPaths?.({ cfg: configSnapshot }) ??
