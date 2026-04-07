@@ -183,42 +183,58 @@ export function runBundledPluginPostinstall(params = {}) {
   const runtimeDeps =
     params.runtimeDeps ??
     discoverBundledPluginRuntimeDeps({ extensionsDir, existsSync: pathExists });
-  const missingSpecs = runtimeDeps
-    .filter((dep) => !pathExists(join(packageRoot, dep.sentinelPath)))
-    .map((dep) => `${dep.name}@${dep.version}`);
+  const missingDeps = runtimeDeps.filter((dep) => !pathExists(join(packageRoot, dep.sentinelPath)));
 
-  if (missingSpecs.length === 0) {
+  if (missingDeps.length === 0) {
     return;
   }
 
-  try {
-    const nestedEnv = createNestedNpmInstallEnv(env);
-    const npmRunner =
-      params.npmRunner ??
-      resolveNpmRunner({
-        env: nestedEnv,
-        execPath: params.execPath,
-        existsSync: pathExists,
-        platform: params.platform,
-        comSpec: params.comSpec,
-        npmArgs: ["install", "--omit=dev", "--no-save", "--package-lock=false", ...missingSpecs],
+  const nestedEnv = createNestedNpmInstallEnv(env);
+  const installed = [];
+  const failed = [];
+
+  // Install each dependency individually so one failure (e.g. a transitive
+  // git dependency that needs network) does not block the rest.
+  for (const dep of missingDeps) {
+    const spec = `${dep.name}@${dep.version}`;
+    try {
+      const npmRunner =
+        params.npmRunner ??
+        resolveNpmRunner({
+          env: nestedEnv,
+          execPath: params.execPath,
+          existsSync: pathExists,
+          platform: params.platform,
+          comSpec: params.comSpec,
+          npmArgs: ["install", "--omit=dev", "--no-save", "--package-lock=false", spec],
+        });
+      const result = spawn(npmRunner.command, npmRunner.args, {
+        cwd: packageRoot,
+        encoding: "utf8",
+        env: npmRunner.env ?? nestedEnv,
+        stdio: "pipe",
+        shell: npmRunner.shell,
+        windowsVerbatimArguments: npmRunner.windowsVerbatimArguments,
       });
-    const result = spawn(npmRunner.command, npmRunner.args, {
-      cwd: packageRoot,
-      encoding: "utf8",
-      env: npmRunner.env ?? nestedEnv,
-      stdio: "pipe",
-      shell: npmRunner.shell,
-      windowsVerbatimArguments: npmRunner.windowsVerbatimArguments,
-    });
-    if (result.status !== 0) {
-      const output = [result.stderr, result.stdout].filter(Boolean).join("\n").trim();
-      throw new Error(output || "npm install failed");
+      if (result.status !== 0) {
+        const output = [result.stderr, result.stdout].filter(Boolean).join("\n").trim();
+        throw new Error(output || "npm install failed");
+      }
+      installed.push(spec);
+    } catch (e) {
+      // Non-fatal: gateway will surface the missing dep via doctor.
+      failed.push(spec);
+      log.warn(`[postinstall] could not install ${spec}: ${String(e)}`);
     }
-    log.log(`[postinstall] installed bundled plugin deps: ${missingSpecs.join(", ")}`);
-  } catch (e) {
-    // Non-fatal: gateway will surface the missing dep via doctor.
-    log.warn(`[postinstall] could not install bundled plugin deps: ${String(e)}`);
+  }
+
+  if (installed.length > 0) {
+    log.log(`[postinstall] installed bundled plugin deps: ${installed.join(", ")}`);
+  }
+  if (failed.length > 0) {
+    log.warn(
+      `[postinstall] ${failed.length} plugin dep(s) could not be installed (non-fatal): ${failed.join(", ")}`,
+    );
   }
 }
 
