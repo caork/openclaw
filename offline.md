@@ -26,9 +26,9 @@ mkdir C:\openclaw && cd C:\openclaw
 tar xzf path\to\openclaw-<version>.tgz
 cd package
 
-# Install production dependencies
+# Install production dependencies (skip channel plugin deps — not needed offline)
+set OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL=1
 npm install --omit=dev
-node scripts\postinstall-bundled-plugins.mjs
 ```
 
 ### 3. Start
@@ -204,6 +204,8 @@ Both scripts:
 ## Notes
 
 - **Architecture**: Windows x64 only (ARM64 not supported)
+- **Channels disabled**: Offline mode skips messaging channels (Slack, Telegram, WhatsApp, etc.). Only the LLM chat UI is available.
+- **Provider deps**: Ollama, Anthropic, DeepSeek, Qwen, and OpenAI-compatible providers work without extra runtime deps. If you need Google (`@google/genai`) or Amazon Bedrock (`@aws-sdk/client-bedrock`), install them manually via `npm install --no-save <package>`.
 - **Security**: The static token is for internal/offline use. Change it for any network-exposed deployment.
 - **Config location**: Windows `%APPDATA%\OpenClaw\openclaw.json`, macOS/Linux `~/.openclaw/openclaw.json`
 - **First browser visit**: Use the full URL with `#token=...`. Subsequent visits just use `http://127.0.0.1:18789/`

@@ -6,6 +6,11 @@ echo   OpenClaw Gateway - Offline Starter
 echo  ========================================
 echo.
 
+:: Skip channel plugins (Slack, Telegram, etc.) — not needed offline
+set OPENCLAW_SKIP_CHANNELS=1
+:: Skip bundled plugin dep install on any accidental postinstall re-run
+set OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL=1
+
 :: Setup default config if not exists
 node scripts\setup-offline-defaults.mjs
 
