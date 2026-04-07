@@ -282,7 +282,7 @@ export async function runWebSearch(
   const candidates = resolveWebSearchCandidates({
     ...params,
     runtimeWebSearch,
-    preferRuntimeProviders: true,
+    preferRuntimeProviders: params.preferRuntimeProviders ?? true,
   });
   if (candidates.length === 0) {
     throw new Error("web_search is disabled or no provider is available.");
@@ -302,6 +302,9 @@ export async function runWebSearch(
         runtimeMetadata: runtimeWebSearch,
       });
       if (!definition) {
+        if (!allowFallback) {
+          throw new Error(`web_search provider "${candidate.id}" is not available.`);
+        }
         continue;
       }
       return {

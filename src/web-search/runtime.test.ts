@@ -447,4 +447,76 @@ describe("web search runtime", () => {
       }),
     ).rejects.toThrow("google aborted");
   });
+
+  it("fails fast when an explicit provider cannot create a tool", async () => {
+    resolveRuntimeWebSearchProvidersMock.mockReturnValue([
+      createProvider({
+        pluginId: "google",
+        id: "google",
+        credentialPath: "tools.web.search.google.apiKey",
+        autoDetectOrder: 1,
+        getCredentialValue: () => "configured",
+        createTool: () => null,
+      }),
+      createProvider({
+        pluginId: "duckduckgo",
+        id: "duckduckgo",
+        credentialPath: "",
+        autoDetectOrder: 100,
+        requiresCredential: false,
+      }),
+    ]);
+
+    await expect(
+      runWebSearch({
+        config: {},
+        providerId: "google",
+        args: { query: "explicit-null-tool" },
+      }),
+    ).rejects.toThrow('web_search provider "google" is not available.');
+  });
+
+  it("honors preferRuntimeProviders during execution", async () => {
+    const configuredProvider = createProvider({
+      pluginId: "google",
+      id: "google",
+      credentialPath: "tools.web.search.google.apiKey",
+      autoDetectOrder: 1,
+      getCredentialValue: () => "configured",
+    });
+    const runtimeProvider = createProvider({
+      pluginId: "runtime-search",
+      id: "runtime-search",
+      credentialPath: "",
+      autoDetectOrder: 0,
+      requiresCredential: false,
+    });
+    resolveRuntimeWebSearchProvidersMock.mockReturnValue([configuredProvider, runtimeProvider]);
+    resolvePluginWebSearchProvidersMock.mockReturnValue([configuredProvider]);
+
+    await expect(
+      runWebSearch({
+        config: {
+          tools: {
+            web: {
+              search: {
+                provider: "google",
+              },
+            },
+          },
+        },
+        runtimeWebSearch: {
+          enabled: true,
+          providerConfigured: "runtime-search",
+          selectedProvider: "runtime-search",
+          providerSource: "runtime",
+        },
+        preferRuntimeProviders: false,
+        args: { query: "prefer-config" },
+      }),
+    ).resolves.toEqual({
+      provider: "google",
+      result: { query: "prefer-config", provider: "google" },
+    });
+  });
 });
