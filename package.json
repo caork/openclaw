@@ -35,7 +35,11 @@
     "skills/",
     "scripts/npm-runner.mjs",
     "scripts/postinstall-bundled-plugins.mjs",
-    "scripts/windows-cmd-helpers.mjs"
+    "scripts/setup-offline-defaults.mjs",
+    "scripts/windows-cmd-helpers.mjs",
+    "start.bat",
+    "start.sh",
+    "offline.md"
   ],
   "type": "module",
   "main": "dist/index.js",
