@@ -519,4 +519,32 @@ describe("web search runtime", () => {
       result: { query: "prefer-config", provider: "google" },
     });
   });
+
+  it("returns a clear error when every fallback-capable provider is unavailable", async () => {
+    resolveRuntimeWebSearchProvidersMock.mockReturnValue([
+      createProvider({
+        pluginId: "google",
+        id: "google",
+        credentialPath: "tools.web.search.google.apiKey",
+        autoDetectOrder: 1,
+        getCredentialValue: () => "configured",
+        createTool: () => null,
+      }),
+      createProvider({
+        pluginId: "duckduckgo",
+        id: "duckduckgo",
+        credentialPath: "",
+        autoDetectOrder: 100,
+        requiresCredential: false,
+        createTool: () => null,
+      }),
+    ]);
+
+    await expect(
+      runWebSearch({
+        config: {},
+        args: { query: "all-null-tools" },
+      }),
+    ).rejects.toThrow("web_search is enabled but no provider is currently available.");
+  });
 });

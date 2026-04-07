@@ -1,8 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Command } from "commander";
-import { createEmbeddingProvider } from "../../extensions/memory-core/src/memory/embeddings.js";
-import { registerBuiltInMemoryEmbeddingProviders } from "../../extensions/memory-core/src/memory/provider-adapters.js";
+import {
+  createEmbeddingProvider,
+  registerBuiltInMemoryEmbeddingProviders,
+} from "../../extensions/memory-core/runtime-api.js";
 import { agentCommand } from "../agents/agent-command.js";
 import { resolveAgentDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import {

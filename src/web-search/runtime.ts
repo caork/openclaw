@@ -293,6 +293,7 @@ export async function runWebSearch(
     providerId: params.providerId,
   });
   let lastError: unknown;
+  let sawUnavailableProvider = false;
 
   for (const candidate of candidates) {
     try {
@@ -305,6 +306,7 @@ export async function runWebSearch(
         if (!allowFallback) {
           throw new Error(`web_search provider "${candidate.id}" is not available.`);
         }
+        sawUnavailableProvider = true;
         continue;
       }
       return {
@@ -319,6 +321,9 @@ export async function runWebSearch(
     }
   }
 
+  if (sawUnavailableProvider && lastError === undefined) {
+    throw new Error("web_search is enabled but no provider is currently available.");
+  }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
