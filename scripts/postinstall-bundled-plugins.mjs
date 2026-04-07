@@ -195,6 +195,9 @@ export function runBundledPluginPostinstall(params = {}) {
 
   // Install each dependency individually so one failure (e.g. a transitive
   // git dependency that needs network) does not block the rest.
+  // Use a 30-second timeout per package to avoid hanging on git:// sub-deps
+  // in offline/air-gapped environments (SSH connect hangs silently for minutes).
+  const INSTALL_TIMEOUT_MS = 30_000;
   for (const dep of missingDeps) {
     const spec = `${dep.name}@${dep.version}`;
     try {
@@ -215,7 +218,13 @@ export function runBundledPluginPostinstall(params = {}) {
         stdio: "pipe",
         shell: npmRunner.shell,
         windowsVerbatimArguments: npmRunner.windowsVerbatimArguments,
+        timeout: INSTALL_TIMEOUT_MS,
       });
+      if (result.signal === "SIGTERM" || result.error?.code === "ETIMEDOUT") {
+        throw new Error(
+          `timed out after ${INSTALL_TIMEOUT_MS / 1000}s (likely a git sub-dependency requiring network)`,
+        );
+      }
       if (result.status !== 0) {
         const output = [result.stderr, result.stdout].filter(Boolean).join("\n").trim();
         throw new Error(output || "npm install failed");
