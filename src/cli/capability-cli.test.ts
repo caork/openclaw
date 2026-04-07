@@ -614,6 +614,85 @@ describe("capability cli", () => {
     );
   });
 
+  it("rejects providerless audio model overrides", async () => {
+    await expect(
+      runRegisteredCli({
+        register: registerCapabilityCli as (program: Command) => void,
+        argv: [
+          "capability",
+          "media",
+          "audio",
+          "transcribe",
+          "--file",
+          "memo.m4a",
+          "--model",
+          "whisper-1",
+          "--json",
+        ],
+      }),
+    ).rejects.toThrow("exit 1");
+
+    expect(mocks.runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("Model overrides must use the form <provider/model>."),
+    );
+    expect(mocks.transcribeAudioFile).not.toHaveBeenCalled();
+  });
+
+  it("rejects providerless image describe model overrides", async () => {
+    await expect(
+      runRegisteredCli({
+        register: registerCapabilityCli as (program: Command) => void,
+        argv: [
+          "capability",
+          "media",
+          "image",
+          "describe",
+          "--file",
+          "photo.jpg",
+          "--model",
+          "gpt-4.1-mini",
+          "--json",
+        ],
+      }),
+    ).rejects.toThrow("exit 1");
+
+    expect(mocks.runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("Model overrides must use the form <provider/model>."),
+    );
+    expect(mocks.describeImageFile).not.toHaveBeenCalled();
+  });
+
+  it("rejects providerless video describe model overrides", async () => {
+    const mediaRuntime = await import("../media-understanding/runtime.js");
+    vi.mocked(mediaRuntime.describeVideoFile).mockResolvedValue({
+      text: "friendly lobster",
+      provider: "openai",
+      model: "gpt-4.1-mini",
+    } as never);
+
+    await expect(
+      runRegisteredCli({
+        register: registerCapabilityCli as (program: Command) => void,
+        argv: [
+          "capability",
+          "media",
+          "video",
+          "describe",
+          "--file",
+          "clip.mp4",
+          "--model",
+          "gpt-4.1-mini",
+          "--json",
+        ],
+      }),
+    ).rejects.toThrow("exit 1");
+
+    expect(mocks.runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("Model overrides must use the form <provider/model>."),
+    );
+    expect(vi.mocked(mediaRuntime.describeVideoFile)).not.toHaveBeenCalled();
+  });
+
   it("bootstraps built-in embedding providers when the registry is empty", async () => {
     mocks.listMemoryEmbeddingProviders.mockReturnValueOnce([]);
 

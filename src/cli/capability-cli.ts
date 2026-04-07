@@ -490,6 +490,22 @@ function resolveModelRefOverride(raw: string | undefined): { provider?: string; 
   };
 }
 
+function requireProviderModelOverride(
+  raw: string | undefined,
+): { provider: string; model: string } | undefined {
+  const resolved = resolveModelRefOverride(raw);
+  if (!raw?.trim()) {
+    return undefined;
+  }
+  if (!resolved.provider || !resolved.model) {
+    throw new Error("Model overrides must use the form <provider/model>.");
+  }
+  return {
+    provider: resolved.provider,
+    model: resolved.model,
+  };
+}
+
 async function runModelRun(params: {
   prompt: string;
   model?: string;
@@ -718,16 +734,13 @@ async function runImageDescribe(params: {
   model?: string;
 }) {
   const cfg = loadConfig();
-  const activeModel = params.model ? resolveModelRefOverride(params.model) : undefined;
+  const activeModel = requireProviderModelOverride(params.model);
   const outputs = await Promise.all(
     params.files.map(async (filePath) => {
       const result = await describeImageFile({
         filePath: path.resolve(filePath),
         cfg,
-        activeModel:
-          activeModel?.provider && activeModel?.model
-            ? { provider: activeModel.provider, model: activeModel.model }
-            : undefined,
+        activeModel,
       });
       if (!result.text) {
         throw new Error(`No description returned for image: ${path.resolve(filePath)}`);
@@ -759,15 +772,12 @@ async function runAudioTranscribe(params: {
   prompt?: string;
 }) {
   const cfg = loadConfig();
-  const activeModel = params.model ? resolveModelRefOverride(params.model) : undefined;
+  const activeModel = requireProviderModelOverride(params.model);
   const result = await transcribeAudioFile({
     filePath: path.resolve(params.file),
     cfg,
     language: params.language,
-    activeModel:
-      activeModel?.provider && activeModel?.model
-        ? { provider: activeModel.provider, model: activeModel.model }
-        : undefined,
+    activeModel,
     prompt: params.prompt,
   });
   if (!result.text) {
@@ -817,14 +827,11 @@ async function runVideoGenerate(params: { prompt: string; model?: string; output
 
 async function runVideoDescribe(params: { file: string; model?: string }) {
   const cfg = loadConfig();
-  const activeModel = params.model ? resolveModelRefOverride(params.model) : undefined;
+  const activeModel = requireProviderModelOverride(params.model);
   const result = await describeVideoFile({
     filePath: path.resolve(params.file),
     cfg,
-    activeModel:
-      activeModel?.provider && activeModel?.model
-        ? { provider: activeModel.provider, model: activeModel.model }
-        : undefined,
+    activeModel,
   });
   if (!result.text) {
     throw new Error(`No description returned for video: ${path.resolve(params.file)}`);
