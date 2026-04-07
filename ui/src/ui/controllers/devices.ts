@@ -45,6 +45,7 @@ export type DevicesState = {
   devicesLoading: boolean;
   devicesError: string | null;
   devicesList: DevicePairingList | null;
+  autoApproveDevices: boolean;
 };
 
 export async function loadDevices(state: DevicesState, opts?: { quiet?: boolean }) {
@@ -73,6 +74,24 @@ export async function loadDevices(state: DevicesState, opts?: { quiet?: boolean 
     }
   } finally {
     state.devicesLoading = false;
+  }
+}
+
+export async function autoApproveAllPending(state: DevicesState) {
+  if (!state.client || !state.connected) {
+    return;
+  }
+  const pending = state.devicesList?.pending;
+  if (!Array.isArray(pending) || pending.length === 0) {
+    return;
+  }
+  try {
+    for (const req of pending) {
+      await state.client.request("device.pair.approve", { requestId: req.requestId });
+    }
+    await loadDevices(state);
+  } catch (err) {
+    state.devicesError = String(err);
   }
 }
 

@@ -22,7 +22,7 @@ import { loadAgents } from "./controllers/agents.ts";
 import { loadAssistantIdentity } from "./controllers/assistant-identity.ts";
 import { loadChatHistory } from "./controllers/chat.ts";
 import { handleChatEvent, type ChatEventPayload } from "./controllers/chat.ts";
-import { loadDevices } from "./controllers/devices.ts";
+import { autoApproveAllPending, loadDevices } from "./controllers/devices.ts";
 import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import {
   addExecApproval,
@@ -89,6 +89,7 @@ type GatewayHost = {
   execApprovalQueue: ExecApprovalRequest[];
   execApprovalError: string | null;
   updateAvailable: UpdateAvailable | null;
+  autoApproveDevices: boolean;
 };
 
 type SessionDefaultsSnapshot = {
@@ -419,7 +420,11 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
   }
 
   if (evt.event === "device.pair.requested" || evt.event === "device.pair.resolved") {
-    void loadDevices(host as unknown as OpenClawApp, { quiet: true });
+    void loadDevices(host as unknown as OpenClawApp, { quiet: true }).then(() => {
+      if (evt.event === "device.pair.requested" && host.autoApproveDevices) {
+        void autoApproveAllPending(host as unknown as OpenClawApp);
+      }
+    });
   }
 
   if (evt.event === "exec.approval.requested") {

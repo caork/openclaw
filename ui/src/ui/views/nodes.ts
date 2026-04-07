@@ -31,6 +31,8 @@ export type NodesProps = {
   execApprovalsTarget: "gateway" | "node";
   execApprovalsTargetNodeId: string | null;
   onRefresh: () => void;
+  autoApproveDevices: boolean;
+  onToggleAutoApprove: () => void;
   onDevicesRefresh: () => void;
   onDeviceApprove: (requestId: string) => void;
   onDeviceReject: (requestId: string) => void;
@@ -83,9 +85,18 @@ function renderDevices(props: NodesProps) {
           <div class="card-title">Devices</div>
           <div class="card-sub">Pairing requests + role tokens.</div>
         </div>
-        <button class="btn" ?disabled=${props.devicesLoading} @click=${props.onDevicesRefresh}>
-          ${props.devicesLoading ? t("common.loading") : t("common.refresh")}
-        </button>
+        <div class="row" style="gap: 8px;">
+          <button
+            class="btn btn--sm ${props.autoApproveDevices ? "primary" : ""}"
+            @click=${props.onToggleAutoApprove}
+            title="When enabled, automatically approves all incoming device pairing requests"
+          >
+            ${props.autoApproveDevices ? "Auto Approve: ON" : "Auto Approve: OFF"}
+          </button>
+          <button class="btn" ?disabled=${props.devicesLoading} @click=${props.onDevicesRefresh}>
+            ${props.devicesLoading ? t("common.loading") : t("common.refresh")}
+          </button>
+        </div>
       </div>
       ${props.devicesError
         ? html`<div class="callout danger" style="margin-top: 12px;">${props.devicesError}</div>`

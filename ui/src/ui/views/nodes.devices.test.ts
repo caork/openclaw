@@ -26,6 +26,8 @@ function baseProps(overrides: Partial<NodesProps> = {}): NodesProps {
     execApprovalsSelectedAgent: null,
     execApprovalsTarget: "gateway",
     execApprovalsTargetNodeId: null,
+    autoApproveDevices: false,
+    onToggleAutoApprove: () => undefined,
     onRefresh: () => undefined,
     onDevicesRefresh: () => undefined,
     onDeviceApprove: () => undefined,

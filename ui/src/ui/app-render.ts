@@ -60,6 +60,7 @@ import {
 import { loadDebug, callDebugMethod } from "./controllers/debug.ts";
 import {
   approveDevicePairing,
+  autoApproveAllPending,
   loadDevices,
   rejectDevicePairing,
   revokeDeviceToken,
@@ -1487,6 +1488,13 @@ export function renderApp(state: AppViewState) {
                 execApprovalsTarget: state.execApprovalsTarget,
                 execApprovalsTargetNodeId: state.execApprovalsTargetNodeId,
                 onRefresh: () => loadNodes(state),
+                autoApproveDevices: state.autoApproveDevices,
+                onToggleAutoApprove: () => {
+                  state.autoApproveDevices = !state.autoApproveDevices;
+                  if (state.autoApproveDevices) {
+                    void autoApproveAllPending(state);
+                  }
+                },
                 onDevicesRefresh: () => loadDevices(state),
                 onDeviceApprove: (requestId) => approveDevicePairing(state, requestId),
                 onDeviceReject: (requestId) => rejectDevicePairing(state, requestId),
