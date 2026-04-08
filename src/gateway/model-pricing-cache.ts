@@ -372,7 +372,12 @@ function scheduleRefresh(params: { config: OpenClawConfig; fetchImpl: typeof fet
   refreshTimer = setTimeout(() => {
     refreshTimer = null;
     void refreshGatewayModelPricingCache(params).catch((error: unknown) => {
-      log.warn(`pricing refresh failed: ${String(error)}`);
+      // Network errors are expected in offline environments.
+      if (error instanceof TypeError) {
+        log.debug(`pricing refresh skipped (no network): ${String(error)}`);
+      } else {
+        log.warn(`pricing refresh failed: ${String(error)}`);
+      }
     });
   }, CACHE_TTL_MS);
 }
@@ -432,7 +437,12 @@ export function startGatewayModelPricingRefresh(params: {
   fetchImpl?: typeof fetch;
 }): () => void {
   void refreshGatewayModelPricingCache(params).catch((error: unknown) => {
-    log.warn(`pricing bootstrap failed: ${String(error)}`);
+    // Network errors are expected in offline environments.
+    if (error instanceof TypeError) {
+      log.debug(`pricing bootstrap skipped (no network): ${String(error)}`);
+    } else {
+      log.warn(`pricing bootstrap failed: ${String(error)}`);
+    }
   });
   return () => {
     clearRefreshTimer();
